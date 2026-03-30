@@ -1,3 +1,4 @@
+from fastapi import APIRouter
 from app.api.endpoints import ingest, auth
 
 api_router = APIRouter()
