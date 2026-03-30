@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.endpoints import ingest, auth
+from app.api.endpoints import ingest, auth, analysis
 
 api_router = APIRouter()
 
@@ -8,3 +8,6 @@ api_router.include_router(ingest.router, prefix="/ingest", tags=["ingestion"])
 
 # Include Auth Endpoint
 api_router.include_router(auth.router, prefix="/auth", tags=["authentication"])
+
+# Include Analysis Endpoint
+api_router.include_router(analysis.router, prefix="/analysis", tags=["analysis"])
