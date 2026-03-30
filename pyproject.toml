@@ -6,5 +6,9 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "fastapi>=0.135.2",
+    "gitpython>=3.1.46",
+    "pydantic-settings>=2.13.1",
+    "pymongo[srv]>=4.16.0",
+    "python-multipart>=0.0.22",
     "uvicorn>=0.42.0",
 ]
