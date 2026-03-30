@@ -9,7 +9,7 @@ router = APIRouter()
 class IngestRequest(BaseModel):
     repo_url: HttpUrl
 
-@router.post("/ingest")
+@router.post("/")
 async def ingest_repository(request: IngestRequest):
     """
     Ingest a repository from GitHub.
