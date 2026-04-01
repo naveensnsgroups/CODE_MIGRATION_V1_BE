@@ -50,11 +50,6 @@ async def callback(code: str):
         )
         user_info = user_response.json()
         
-        return {
-            "access_token": access_token,
-            "user": {
-                "id": user_info.get("id"),
-                "login": user_info.get("login"),
-                "avatar_url": user_info.get("avatar_url"),
-            }
-        }
+        return RedirectResponse(
+            f"http://localhost:3000/dashboard?token={access_token}&uid={user_info.get('id')}&user={user_info.get('login')}&avatar={user_info.get('avatar_url')}"
+        )

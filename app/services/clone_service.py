@@ -6,7 +6,7 @@ import uuid
 
 class CloneService:
     @staticmethod
-    def clone_repository(repo_url: str) -> str:
+    def clone_repository(repo_url: str, github_token: str = None) -> str:
         """
         Clones a repository into a unique local storage path.
         Returns the project_id.
@@ -18,8 +18,15 @@ class CloneService:
         project_path.mkdir(parents=True, exist_ok=True)
         
         try:
+            # Handle Authenticated Git (Safe and Invisible)
+            authenticated_url = repo_url
+            if github_token and "github.com" in repo_url:
+                # Transform https://github.com/org/repo to https://token@github.com/org/repo
+                path = repo_url.replace("https://github.com/", "")
+                authenticated_url = f"https://{github_token}@github.com/{path}"
+                
             # Clone repo
-            Repo.clone_from(repo_url, project_path)
+            Repo.clone_from(authenticated_url, project_path)
             return project_id
         except Exception as e:
             # Cleanup on failure

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, HttpUrl
+from typing import Optional
 from app.services.clone_service import clone_service
 from app.services.analysis_service import analysis_service
 from app.core.config import settings
@@ -8,6 +9,7 @@ router = APIRouter()
 
 class IngestRequest(BaseModel):
     repo_url: HttpUrl
+    github_token: Optional[str] = None
 
 @router.post("/")
 async def ingest_repository(request: IngestRequest):
@@ -18,7 +20,7 @@ async def ingest_repository(request: IngestRequest):
     3. Detect metadata.
     """
     try:
-        project_id = clone_service.clone_repository(str(request.repo_url))
+        project_id = clone_service.clone_repository(str(request.repo_url), request.github_token)
         project_path = settings.PROJECTS_DIR / project_id
         
         # Analyze Project
