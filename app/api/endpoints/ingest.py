@@ -27,8 +27,12 @@ async def ingest_repository(request: IngestRequest):
         file_tree = analysis_service.get_file_tree(project_path)
         metadata = analysis_service.detect_metadata(project_path)
         
+        # Extract Project Name from URL
+        project_name = str(request.repo_url).rstrip('/').split('/')[-1].replace('.git', '')
+        
         return {
             "project_id": project_id,
+            "project_name": project_name,
             "metadata": metadata,
             "file_tree": file_tree,
             "status": "success"
