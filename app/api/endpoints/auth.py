@@ -51,5 +51,5 @@ async def callback(code: str):
         user_info = user_response.json()
         
         return RedirectResponse(
-            f"http://localhost:3000/dashboard?token={access_token}&uid={user_info.get('id')}&user={user_info.get('login')}&avatar={user_info.get('avatar_url')}"
+            f"http://localhost:3000/?token={access_token}&uid={user_info.get('id')}&user={user_info.get('login')}&avatar={user_info.get('avatar_url')}"
         )
