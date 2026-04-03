@@ -183,3 +183,30 @@ async def receive_migration_report(report: MigrationReportRequest):
     except Exception as e:
         print(f"[Webhook Ingestion] ERROR: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/{project_id}")
+async def get_project_ingestion(project_id: str):
+    """
+    Surgical Metadata Port: Retrieve file tree and metadata for an existing project.
+    """
+    project_path = settings.PROJECTS_DIR / project_id
+    if not project_path.exists():
+        raise HTTPException(status_code=404, detail="Project not found.")
+        
+    try:
+        # Re-Analyze/Fetch Project State
+        file_tree = analysis_service.get_file_tree(project_path)
+        metadata = analysis_service.detect_metadata(project_path)
+        
+        # Extract Project Name from directory (or DB if we had it)
+        project_name = project_id.replace('prj_', '').split('_')[0] 
+        
+        return {
+            "project_id": project_id,
+            "project_name": project_name,
+            "metadata": metadata,
+            "file_tree": file_tree,
+            "status": "success"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
