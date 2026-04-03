@@ -21,6 +21,16 @@ class AccessRequest(BaseModel):
     owner_email: str
     request_user: str
 
+class MigrationReportRequest(BaseModel):
+    project_id: str
+    target_stack: Optional[dict] = None
+    roadmap: Optional[list] = None
+    feasibility_score: Optional[int] = 0
+    modernization_strategy: Optional[str] = None
+    summary: Optional[str] = None
+    core_features: Optional[list] = None
+    business_rules: Optional[list] = None
+
 @router.post("/")
 async def ingest_repository(request: IngestRequest):
     """
@@ -134,3 +144,42 @@ async def request_access(request: AccessRequest):
         raise HTTPException(status_code=500, detail="Failed to send access request email.")
         
     return {"status": "success", "message": "Access request sent successfully."}
+
+@router.post("/migration")
+async def receive_migration_report(report: MigrationReportRequest):
+    """
+    Surgical Modernization Ingestion: Capture n8n transmission and persist to DB.
+    """
+    from app.core.database import db
+    import datetime
+    import json
+
+    try:
+        if db.db is None:
+            raise HTTPException(status_code=503, detail="Database connection not available")
+
+        # 🧪 Construct Industrial Report Payload
+        report_data = {
+            "project_id": report.project_id,
+            "action": "migration",
+            "content": json.dumps(report.dict()), # Store as JSON string for consistency
+            "saved_at": datetime.datetime.utcnow().isoformat(),
+        }
+
+        # 🔍 Upsert Intelligence: Update existing migration report or create new one
+        result = db.db.reports.update_one(
+            {"project_id": report.project_id, "action": "migration"},
+            {"$set": report_data},
+            upsert=True
+        )
+
+        print(f"[Webhook Ingestion] Surgical Success: Migration intelligence saved for project {report.project_id}")
+        
+        return {
+            "status": "success",
+            "project_id": report.project_id,
+            "action": "migration"
+        }
+    except Exception as e:
+        print(f"[Webhook Ingestion] ERROR: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
