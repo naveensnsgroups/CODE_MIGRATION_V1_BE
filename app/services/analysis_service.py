@@ -39,16 +39,32 @@ class AnalysisService:
             "dependencies": []
         }
 
-        # Check for Common Language Files
+        # 1. Check for Manifests (package.json, etc.)
         if (project_path / "package.json").exists():
-            metadata["language"] = "JavaScript/TypeScript"
-            metadata["framework"] = "Node.js (likely React/Next.js/Express)"
+            metadata["language"] = "Javascript/Typescript"
+            metadata["framework"] = "Node.js (NPM)"
         elif (project_path / "requirements.txt").exists() or (project_path / "pyproject.toml").exists():
             metadata["language"] = "Python"
-            metadata["framework"] = "Django/FastAPI/Flask"
-        elif (project_path / "pom.xml").exists() or (project_path / "build.gradle").exists():
-            metadata["language"] = "Java"
-            metadata["framework"] = "Spring/Maven/Gradle"
+            metadata["framework"] = "Flask/FastAPI/Django"
+        
+        # 2. Legacy/Markdown Detection (Protocol #5)
+        cobol_files = list(project_path.glob("**/*.cob")) + list(project_path.glob("**/*.cbl"))
+        sql_files = list(project_path.glob("**/*.sql"))
+        md_files = list(project_path.glob("**/*.md"))
+
+        if not metadata["language"] != "Unknown":
+            if cobol_files:
+                metadata["language"] = "COBOL (Legacy)"
+                metadata["framework"] = "Mainframe System"
+            elif sql_files and len(sql_files) > len(list(project_path.glob("**/*.js"))):
+                metadata["language"] = "SQL"
+                metadata["framework"] = "Database Schema"
+            elif md_files and not list(project_path.glob("**/*.py")):
+                metadata["language"] = "Technical Docs"
+                metadata["framework"] = "Markdown Suite"
+            elif list(project_path.glob("**/*.html")):
+                metadata["language"] = "Vanilla Web (HTML/CSS/JS)"
+                metadata["framework"] = "Static Website"
 
         return metadata
 
@@ -61,8 +77,12 @@ class AnalysisService:
         project_path = settings.PROJECTS_DIR / project_id
         context = []
         
-        # Files to include (source code)
-        valid_extensions = {'.py', '.js', '.ts', '.tsx', '.jsx', '.html', '.css', '.json'}
+        # Files to include (source code & sensitive context)
+        valid_extensions = {
+            '.py', '.js', '.ts', '.tsx', '.jsx', '.html', '.css', '.json',
+            '.md', '.txt', '.sql', '.cob', '.cbl', '.f90', '.f',
+            '.yaml', '.yml', '.env'
+        }
         ignored_dirs = {'node_modules', 'venv', '.git', '__pycache__', 'dist', 'build'}
 
         for root, dirs, files in os.walk(project_path):

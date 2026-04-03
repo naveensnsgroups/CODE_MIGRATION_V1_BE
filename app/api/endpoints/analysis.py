@@ -79,6 +79,8 @@ async def get_project_context(project_id: str):
         if not context:
             raise HTTPException(status_code=404, detail="No source code found or project empty.")
         return {"project_id": project_id, "context": context, "status": "success"}
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

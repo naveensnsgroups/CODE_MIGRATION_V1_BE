@@ -3,16 +3,24 @@ from pathlib import Path
 from git import Repo
 from app.core.config import settings
 import uuid
+import hashlib
 
 class CloneService:
     @staticmethod
     def clone_repository(repo_url: str, github_token: str = None) -> str:
         """
         Clones a repository into a unique local storage path.
-        Returns the project_id.
+        Returns the project_id (Deterministic Hash).
         """
-        project_id = str(uuid.uuid4())
+        # 🧪 Surgical Deterministic ID
+        url_hash = hashlib.sha256(repo_url.lower().strip().encode()).hexdigest()[:12]
+        project_id = f"prj_{url_hash}"
         project_path = settings.PROJECTS_DIR / project_id
+        
+        # 🚀 Shortcut: If project already exists, don't re-clone
+        if project_path.exists():
+            print(f"[Persistence Hub] Project {project_id} already exists. Resuming session.")
+            return project_id
         
         # Ensure directory exists
         project_path.mkdir(parents=True, exist_ok=True)
