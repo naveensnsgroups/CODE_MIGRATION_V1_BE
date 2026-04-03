@@ -17,6 +17,12 @@ class Settings(BaseSettings):
     MONGODB_URL: str | None = None
     MONGODB_DB: str = "Code_Migration_V1"
 
+    # Email SMTP (Gmail)
+    EMAIL_HOST: str = "smtp.gmail.com"
+    EMAIL_PORT: int = 587
+    EMAIL_HOST_USER: str | None = None
+    EMAIL_HOST_PASSWORD: str | None = None
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

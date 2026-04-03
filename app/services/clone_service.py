@@ -37,9 +37,23 @@ class CloneService:
             Repo.clone_from(authenticated_url, project_path)
             return project_id
         except Exception as e:
+            # 🧪 Surgical Error Detection
+            error_msg = str(e).lower()
+            auth_failed = any(x in error_msg for x in [
+                "authentication failed", 
+                "access denied", 
+                "could not read from remote repository",
+                "repository not found"
+            ])
+            
             # Cleanup on failure
             if project_path.exists():
                 shutil.rmtree(project_path)
+                
+            if auth_failed:
+                # 📢 Specific "Private Repository" Exception
+                raise Exception("PRIVATE_REPOSITORY_ACCESS_DENIED")
+            
             raise Exception(f"Failed to clone repository: {str(e)}")
 
 clone_service = CloneService()
