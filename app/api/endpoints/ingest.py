@@ -21,15 +21,12 @@ class AccessRequest(BaseModel):
     owner_email: str
     request_user: str
 
-class MigrationReportRequest(BaseModel):
+class IntelligenceRequest(BaseModel):
     project_id: str
-    target_stack: Optional[dict] = None
-    roadmap: Optional[list] = None
-    feasibility_score: Optional[int] = 0
-    modernization_strategy: Optional[str] = None
+    action: str
+    content: Optional[str] = None
+    # Support legacy flat fields if necessary
     summary: Optional[str] = None
-    core_features: Optional[list] = None
-    business_rules: Optional[list] = None
 
 @router.post("/")
 async def ingest_repository(request: IngestRequest):
@@ -146,9 +143,10 @@ async def request_access(request: AccessRequest):
     return {"status": "success", "message": "Access request sent successfully."}
 
 @router.post("/migration")
-async def receive_migration_report(report: MigrationReportRequest):
+@router.post("/intelligence")
+async def receive_intelligence(report: IntelligenceRequest):
     """
-    Surgical Modernization Ingestion: Capture n8n transmission and persist to DB.
+    Surgical Intelligence Ingestion: Capture any n8n mission segment and persist to DB.
     """
     from app.core.database import db
     import datetime
@@ -158,54 +156,79 @@ async def receive_migration_report(report: MigrationReportRequest):
         if db.db is None:
             raise HTTPException(status_code=503, detail="Database connection not available")
 
-        # 🧪 Construct Industrial Report Payload
+        # 🧪 Dynamic Payload Alignment: Handle both raw 'content' and flat fields
+        payload = {}
+        if report.content:
+            try:
+                payload = json.loads(report.content)
+            except:
+                payload = {"data": report.content}
+        else:
+            # Fallback to flat fields
+            payload = report.dict(exclude_none=True)
+
         report_data = {
             "project_id": report.project_id,
-            "action": "migration",
-            "content": json.dumps(report.dict()), # Store as JSON string for consistency
+            "action": report.action,
+            "content": json.dumps(payload),
             "saved_at": datetime.datetime.utcnow().isoformat(),
         }
 
-        # 🔍 Upsert Intelligence: Update existing migration report or create new one
+        # 🔍 Upsert Intelligence: Update existing report for this action or create new one
         result = db.db.reports.update_one(
-            {"project_id": report.project_id, "action": "migration"},
+            {"project_id": report.project_id, "action": report.action},
             {"$set": report_data},
             upsert=True
         )
 
-        print(f"[Webhook Ingestion] Surgical Success: Migration intelligence saved for project {report.project_id}")
+        print(f"[Intelligence Ingestion] Surgical Success: '{report.action}' saved for project {report.project_id}")
         
         return {
             "status": "success",
             "project_id": report.project_id,
-            "action": "migration"
+            "action": report.action
         }
     except Exception as e:
-        print(f"[Webhook Ingestion] ERROR: {str(e)}")
+        print(f"[Intelligence Ingestion] ERROR: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{project_id}")
 async def get_project_ingestion(project_id: str):
     """
-    Surgical Metadata Port: Retrieve file tree and metadata for an existing project.
+    Surgical Metadata Port: Retrieve file tree, metadata, and modernization intelligence.
     """
+    from app.core.database import db
+    import json
+
     project_path = settings.PROJECTS_DIR / project_id
     if not project_path.exists():
         raise HTTPException(status_code=404, detail="Project not found.")
         
     try:
-        # Re-Analyze/Fetch Project State
+        # Phase 1: Re-Analyze/Fetch Project Structure
         file_tree = analysis_service.get_file_tree(project_path)
         metadata = analysis_service.detect_metadata(project_path)
-        
-        # Extract Project Name from directory (or DB if we had it)
         project_name = project_id.replace('prj_', '').split('_')[0] 
-        
+
+        # Phase 2: Modernization Intelligence Port (Sync from DB)
+        reports = {}
+        if db.db is not None:
+            cursor = db.db.reports.find({"project_id": project_id})
+            for report in cursor:
+                action = report.get("action")
+                content = report.get("content")
+                if action and content:
+                    try:
+                        reports[action] = json.loads(content)
+                    except:
+                        reports[action] = content
+
         return {
             "project_id": project_id,
             "project_name": project_name,
             "metadata": metadata,
             "file_tree": file_tree,
+            "reports": reports,
             "status": "success"
         }
     except Exception as e:
