@@ -17,6 +17,7 @@ async def login():
     params = {
         "client_id": settings.GITHUB_CLIENT_ID,
         "scope": "user repo",
+        "prompt": "select_account",
     }
     query_string = "&".join([f"{k}={v}" for k, v in params.items()])
     return RedirectResponse(f"{GITHUB_AUTHORIZE_URL}?{query_string}")
