@@ -233,3 +233,66 @@ async def get_project_ingestion(project_id: str):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/{project_id}/file")
+async def get_file_content(project_id: str, path: str):
+    """
+    Surgical File Retrieval: Securely read and return file contents for auditing.
+    """
+    import os
+    
+    # 🧪 Absolute Path Boundary: Ensure project exists
+    project_path = settings.PROJECTS_DIR / project_id
+    if not project_path.exists():
+        raise HTTPException(status_code=404, detail="Project not found.")
+    
+    # 🔒 Security Protocol: Prevent directory traversal (../)
+    file_path = (project_path / path).resolve()
+    if not str(file_path).startswith(str(project_path.resolve())):
+        raise HTTPException(status_code=403, detail="Security Violation: Access denied.")
+    
+    # 🔍 Existence Check: Ensure it's a file
+    if not file_path.exists() or not file_path.is_file():
+        raise HTTPException(status_code=404, detail="File not found.")
+        
+    try:
+        import mimetypes
+        import base64
+        
+        mime_type, _ = mimetypes.guess_type(file_path)
+        is_image = mime_type and mime_type.startswith("image/")
+        
+        if is_image:
+            with open(file_path, "rb") as f:
+                binary_content = f.read()
+                base64_content = base64.b64encode(binary_content).decode("utf-8")
+            return {
+                "project_id": project_id,
+                "path": path,
+                "content": base64_content,
+                "mime_type": mime_type,
+                "type": "image",
+                "status": "success"
+            }
+        
+        # 🧪 Text Protocol: Standard UTF-8 read
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        return {
+            "project_id": project_id,
+            "path": path,
+            "content": content,
+            "type": "text",
+            "status": "success"
+        }
+    except UnicodeDecodeError:
+        # 🔒 Binary Guard: If text read fails, mark as binary
+        return {
+            "project_id": project_id,
+            "path": path,
+            "type": "binary",
+            "status": "success",
+            "detail": "Binary asset detected. Visual rendering required."
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
