@@ -69,9 +69,10 @@ class AnalysisService:
         return metadata
 
     @staticmethod
-    def get_project_context(project_id: str) -> str:
+    def get_project_context(project_id: str) -> List[Dict[str, str]]:
         """
         Gathers all source code from the project for LLM analysis.
+        Returns a list of {"file_name": str, "content": str} objects.
         """
         from app.core.config import settings
         project_path = settings.PROJECTS_DIR / project_id
@@ -93,13 +94,16 @@ class AnalysisService:
                 file_path = Path(root) / file
                 if file_path.suffix in valid_extensions:
                     try:
-                        relative_path = file_path.relative_to(project_path)
+                        relative_path = str(file_path.relative_to(project_path))
                         with open(file_path, 'r', encoding='utf-8') as f:
                             content = f.read()
-                            context.append(f"--- FILE: {relative_path} ---\n{content}\n")
+                            context.append({
+                                "file_name": relative_path,
+                                "content": content
+                            })
                     except Exception as e:
                         print(f"Error reading {file_path}: {e}")
         
-        return "\n".join(context)
+        return context
 
 analysis_service = AnalysisService()

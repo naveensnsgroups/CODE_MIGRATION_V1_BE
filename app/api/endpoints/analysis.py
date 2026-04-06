@@ -1,16 +1,36 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List
+import datetime
+import httpx
 from app.services.analysis_service import analysis_service
 from app.core.config import settings
 from app.core.database import db
-import datetime
 
 router = APIRouter()
 
 class SaveReportRequest(BaseModel):
     action: str
     content: str
+
+class ProxyAnalysisRequest(BaseModel):
+    full_url: str
+    payload: dict
+
+@router.post("/proxy")
+async def proxy_analysis(request: ProxyAnalysisRequest):
+    """
+    Proxies an analysis request to an external agent (e.g. n8n) to bypass CORS.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            response = await client.post(request.full_url, json=request.payload)
+            response.raise_for_status()
+            return response.json()
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=e.response.status_code, detail=f"Agent returned error: {e.response.text}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{project_id}/reports")
 async def get_saved_reports(project_id: str):
