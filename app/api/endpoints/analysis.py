@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 import datetime
 import httpx
+from pathlib import Path
 from app.services.analysis_service import analysis_service
 from app.core.config import settings
 from app.core.database import db
@@ -92,15 +93,61 @@ async def save_analysis_report(project_id: str, request: SaveReportRequest):
 @router.get("/{project_id}/context")
 async def get_project_context(project_id: str):
     """
-    Fetches the full code context for a project to be analyzed by AI.
+    Fetches the full code context for a project and bundles the industrial skill directive.
     """
     try:
         context = analysis_service.get_project_context(project_id)
         if not context:
             raise HTTPException(status_code=404, detail="No source code found or project empty.")
-        return {"project_id": project_id, "context": context, "status": "success"}
+            
+        # 🧠 Payload Hydration: Bundle the Master Migration Skill
+        skill_content = ""
+        try:
+            skills_dir = Path("e:/CODE_MIGRATION_V1/CODE_MIGRATION_V1_BE/skills")
+            skill_path = skills_dir / "python_fastapi.skill.md"
+            if skill_path.exists():
+                with open(skill_path, "r", encoding="utf-8") as f:
+                    skill_content = f.read()
+        except Exception as e:
+            print(f"[Hydration Warning] Failed to bundle skill: {str(e)}")
+            
+        return {
+            "project_id": project_id, 
+            "context": context, 
+            "skill_content": skill_content, # ✅ Bundled Industrial Rules
+            "status": "success"
+        }
     except HTTPException as e:
         raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/skills/{action}")
+async def get_skill_directive(action: str):
+    """
+    Fetches a high-depth AI Skill directive from the modular /skills repository.
+    """
+    try:
+        # Rules: Support both legacy 'migration' and explicit stack names
+        skill_name = "python_fastapi" if action == "migration" else action
+        skill_file = f"{skill_name}.skill.md"
+        
+        # Target: Resolve from the high-depth /skills directory
+        skills_dir = Path("e:/CODE_MIGRATION_V1/CODE_MIGRATION_V1_BE/skills")
+        skill_path = skills_dir / skill_file
+        
+        if not skill_path.exists():
+            # Fallback for generic skills
+            skill_path = skills_dir / "general.skill.md"
+            
+        if not skill_path.exists():
+            return {"action": action, "content": "", "status": "no_skill"}
+            
+        with open(skill_path, "r", encoding="utf-8") as f:
+            content = f.read()
+            
+        return {"action": action, "content": content, "status": "success"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
