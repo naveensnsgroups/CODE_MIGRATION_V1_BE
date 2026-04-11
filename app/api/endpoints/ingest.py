@@ -146,7 +146,7 @@ async def request_access(request: AccessRequest):
 @router.post("/intelligence")
 async def receive_intelligence(report: IntelligenceRequest):
     """
-    Surgical Intelligence Ingestion: Capture any n8n mission segment and persist to DB.
+    Surgical Intelligence Ingestion: Capture any  mission segment and persist to DB.
     """
     from app.core.database import db
     import datetime
