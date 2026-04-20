@@ -193,14 +193,6 @@ async def get_project_context(project_id: str):
             raise HTTPException(status_code=404, detail="No source code found or project empty.")
 
         skill_content = ""
-        try:
-            skills_dir = Path("e:/CODE_MIGRATION_V1/CODE_MIGRATION_V1_BE/skills")
-            skill_path = skills_dir / "python_fastapi.skill.md"
-            if skill_path.exists():
-                with open(skill_path, "r", encoding="utf-8") as f:
-                    skill_content = f.read()
-        except Exception as e:
-            print(f"[Hydration Warning] Failed to bundle skill: {str(e)}")
 
         return {
             "project_id": project_id,
@@ -220,7 +212,7 @@ async def get_skill_directive(action: str):
     Fetches a high-depth AI Skill directive from the modular /skills repository.
     """
     try:
-        skill_name = "python_fastapi" if action == "migration" else action
+        skill_name = action
         skill_file = f"{skill_name}.skill.md"
 
         skills_dir = Path("e:/CODE_MIGRATION_V1/CODE_MIGRATION_V1_BE/skills")
