@@ -37,7 +37,7 @@ async def get_saved_reports(project_id: str):
         reports = []
         for doc in cursor:
             action = doc.get("action", "unknown")
-            # 🚀 Priority Logic (v26.6): Skip 'routes' here if we expect it from 'map_agent'
+            #  Priority Logic (v26.6): Skip 'routes' here if we expect it from 'map_agent'
             # (We'll check map_agent separately to ensure high-depth data takes precedence)
             if action == "routes": continue
 
@@ -48,7 +48,7 @@ async def get_saved_reports(project_id: str):
                 "saved_at": doc.get("saved_at", datetime.datetime.utcnow().isoformat())
             })
 
-        # 2. 🧠 Surgical Routing: Check dedicated agent collections for high-priority analysis reports
+        # 2.  Surgical Routing: Check dedicated agent collections for high-priority analysis reports
         
         # 2a. General Agent
         general_doc = db.db.general_agent.find_one({"project_id": project_id, "action": "general"})
@@ -147,7 +147,7 @@ async def save_analysis_report(project_id: str, request: SaveReportRequest):
             "saved_at": datetime.datetime.utcnow().isoformat(),
         }
 
-        # 🚀 Surgical Routing (v26.5): 
+        #  Surgical Routing (v26.5): 
         # 'general' -> general_agent
         # 'routes' -> map_agent
         # 'logic' -> logic_agent

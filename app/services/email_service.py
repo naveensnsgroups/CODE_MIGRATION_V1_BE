@@ -25,12 +25,12 @@ class EmailService:
         repo_name = repo_url.rstrip('/').split('/')[-1]
         github_collab_url = f"{repo_url.rstrip('/')}/settings/access"
         
-        # 🧪 Intelligence Branding Update
+        #  Intelligence Branding Update
         display_user = "Code Migration Team"
         display_platform = "Code Migration-1.0"
         
         try:
-            # 📬 Construct Professional HTML Intelligence Email
+            #  Construct Professional HTML Intelligence Email
             subject = f"Access Request: {repo_name} | Code Migration Hub"
             
             # --- Minimalist Industrial HTML Template ---
@@ -111,7 +111,7 @@ class EmailService:
             msg.attach(MIMEText(text_body, 'plain'))
             msg.attach(MIMEText(html_body, 'html'))
 
-            # 🚀 Secure SMTP Transmission
+            #  Secure SMTP Transmission
             with smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT) as server:
                 server.starttls()
                 server.login(settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD)

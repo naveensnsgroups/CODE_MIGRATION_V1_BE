@@ -64,7 +64,7 @@ async def resolve_owner(request: ResolveOwnerRequest):
     """
     Surgical Owner Resolution: Profile fetch + Commit Intelligence Fallback.
     """
-    # 🧪 Extract Owner Username
+    #  Extract Owner Username
     url_str = str(request.repo_url).rstrip('/')
     parts = url_str.split('/')
     if len(parts) < 4:
@@ -72,7 +72,7 @@ async def resolve_owner(request: ResolveOwnerRequest):
     
     owner = parts[3]
     
-    # 🔍 Fetch from GitHub API
+    #  Fetch from GitHub API
     import httpx
     async with httpx.AsyncClient() as client:
         try:
@@ -156,7 +156,7 @@ async def receive_intelligence(report: IntelligenceRequest):
         if db.db is None:
             raise HTTPException(status_code=503, detail="Database connection not available")
 
-        # 🧪 Dynamic Payload Alignment: Handle both raw 'content' and flat fields
+        #  Dynamic Payload Alignment: Handle both raw 'content' and flat fields
         payload = {}
         if report.content:
             try:
@@ -174,7 +174,7 @@ async def receive_intelligence(report: IntelligenceRequest):
             "saved_at": datetime.datetime.utcnow().isoformat(),
         }
 
-        # 🔍 Upsert Intelligence: Update existing report for this action or create new one
+        #  Upsert Intelligence: Update existing report for this action or create new one
         result = db.db.reports.update_one(
             {"project_id": report.project_id, "action": report.action},
             {"$set": report_data},
@@ -241,17 +241,17 @@ async def get_file_content(project_id: str, path: str):
     """
     import os
     
-    # 🧪 Absolute Path Boundary: Ensure project exists
+    #  Absolute Path Boundary: Ensure project exists
     project_path = settings.PROJECTS_DIR / project_id
     if not project_path.exists():
         raise HTTPException(status_code=404, detail="Project not found.")
     
-    # 🔒 Security Protocol: Prevent directory traversal (../)
+    #  Security Protocol: Prevent directory traversal (../)
     file_path = (project_path / path).resolve()
     if not str(file_path).startswith(str(project_path.resolve())):
         raise HTTPException(status_code=403, detail="Security Violation: Access denied.")
     
-    # 🔍 Existence Check: Ensure it's a file
+    #  Existence Check: Ensure it's a file
     if not file_path.exists() or not file_path.is_file():
         raise HTTPException(status_code=404, detail="File not found.")
         
@@ -275,7 +275,7 @@ async def get_file_content(project_id: str, path: str):
                 "status": "success"
             }
         
-        # 🧪 Text Protocol: Standard UTF-8 read
+        #  Text Protocol: Standard UTF-8 read
         with open(file_path, "r", encoding="utf-8") as f:
             content = f.read()
         return {
@@ -286,7 +286,7 @@ async def get_file_content(project_id: str, path: str):
             "status": "success"
         }
     except UnicodeDecodeError:
-        # 🔒 Binary Guard: If text read fails, mark as binary
+        #  Binary Guard: If text read fails, mark as binary
         return {
             "project_id": project_id,
             "path": path,
