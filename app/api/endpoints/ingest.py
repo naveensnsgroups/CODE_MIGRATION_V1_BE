@@ -12,6 +12,8 @@ router = APIRouter()
 class IngestRequest(BaseModel):
     repo_url: HttpUrl
     github_token: Optional[str] = None
+    mode: Optional[str] = 'enterprise'
+    user_info: Optional[dict] = None
 
 class ResolveOwnerRequest(BaseModel):
     repo_url: HttpUrl
@@ -44,14 +46,35 @@ async def ingest_repository(request: IngestRequest):
         file_tree = await analysis_service.get_file_tree(project_path)
         metadata = await analysis_service.detect_metadata(project_path)
         
-        # Extract Project Name from URL
+        #  Persistence Hub: Establish Project Metadata in MongoDB
+        from app.core.database import db
+        import datetime
+        
         project_name = str(request.repo_url).rstrip('/').split('/')[-1].replace('.git', '')
         
+        if db.db is not None:
+            project_doc = {
+                "project_id": project_id,
+                "project_name": project_name,
+                "repo_url": str(request.repo_url),
+                "mode": request.mode,
+                "user_info": request.user_info,
+                "metadata": metadata,
+                "updated_at": datetime.datetime.utcnow().isoformat()
+            }
+            await db.db.projects.update_one(
+                {"project_id": project_id},
+                {"$set": project_doc},
+                upsert=True
+            )
+            print(f"[Persistence Hub] Project {project_id} synced to DB with mode: {request.mode}")
+
         return {
             "project_id": project_id,
             "project_name": project_name,
             "metadata": metadata,
             "file_tree": file_tree,
+            "mode": request.mode,
             "status": "success"
         }
     except Exception as e:
@@ -212,7 +235,17 @@ async def get_project_ingestion(project_id: str):
 
         # Phase 2: Modernization Intelligence Port (Sync from DB)
         reports = {}
+        project_meta = {}
         if db.db is not None:
+            # Load project metadata
+            project_doc = await db.db.projects.find_one({"project_id": project_id})
+            if project_doc:
+                project_meta = {
+                    "mode": project_doc.get("mode"),
+                    "user_info": project_doc.get("user_info")
+                }
+
+            # Load analysis reports
             cursor = db.db.reports.find({"project_id": project_id})
             async for report in cursor:
                 action = report.get("action")
@@ -229,6 +262,8 @@ async def get_project_ingestion(project_id: str):
             "metadata": metadata,
             "file_tree": file_tree,
             "reports": reports,
+            "workbench_mode": project_meta.get("mode"),
+            "user_info": project_meta.get("user_info"),
             "status": "success"
         }
     except Exception as e:
