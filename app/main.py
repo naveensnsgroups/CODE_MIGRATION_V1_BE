@@ -4,15 +4,17 @@ from app.api.router import api_router
 from app.core.config import settings
 from app.core.database import db
 
-app = FastAPI(title=settings.PROJECT_NAME)
+from contextlib import asynccontextmanager
 
-@app.on_event("startup")
-def startup_db_client():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Connect to DB
     db.connect_to_mongo()
-
-@app.on_event("shutdown")
-def shutdown_db_client():
+    yield
+    # Shutdown: Close Connection
     db.close_mongo_connection()
+
+app = FastAPI(title=settings.PROJECT_NAME, lifespan=lifespan)
 
 # Register CORS Middleware
 app.add_middleware(

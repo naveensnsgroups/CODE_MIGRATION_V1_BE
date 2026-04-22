@@ -41,8 +41,8 @@ async def ingest_repository(request: IngestRequest):
         project_path = settings.PROJECTS_DIR / project_id
         
         # Analyze Project
-        file_tree = analysis_service.get_file_tree(project_path)
-        metadata = analysis_service.detect_metadata(project_path)
+        file_tree = await analysis_service.get_file_tree(project_path)
+        metadata = await analysis_service.detect_metadata(project_path)
         
         # Extract Project Name from URL
         project_name = str(request.repo_url).rstrip('/').split('/')[-1].replace('.git', '')
@@ -175,7 +175,7 @@ async def receive_intelligence(report: IntelligenceRequest):
         }
 
         #  Upsert Intelligence: Update existing report for this action or create new one
-        result = db.db.reports.update_one(
+        result = await db.db.reports.update_one(
             {"project_id": report.project_id, "action": report.action},
             {"$set": report_data},
             upsert=True
@@ -206,15 +206,15 @@ async def get_project_ingestion(project_id: str):
         
     try:
         # Phase 1: Re-Analyze/Fetch Project Structure
-        file_tree = analysis_service.get_file_tree(project_path)
-        metadata = analysis_service.detect_metadata(project_path)
+        file_tree = await analysis_service.get_file_tree(project_path)
+        metadata = await analysis_service.detect_metadata(project_path)
         project_name = project_id.replace('prj_', '').split('_')[0] 
 
         # Phase 2: Modernization Intelligence Port (Sync from DB)
         reports = {}
         if db.db is not None:
             cursor = db.db.reports.find({"project_id": project_id})
-            for report in cursor:
+            async for report in cursor:
                 action = report.get("action")
                 content = report.get("content")
                 if action and content:

@@ -1,8 +1,8 @@
-from pymongo import MongoClient
+from motor.motor_asyncio import AsyncIOMotorClient
 from app.core.config import settings
 
 class Database:
-    client: MongoClient = None
+    client: AsyncIOMotorClient = None
     db = None
 
     def connect_to_mongo(self):
@@ -10,9 +10,9 @@ class Database:
             print("WARNING: MONGODB_URL not found in environment. Persistence disabled.")
             return
         
-        self.client = MongoClient(settings.MONGODB_URL)
+        self.client = AsyncIOMotorClient(settings.MONGODB_URL)
         self.db = self.client[settings.MONGODB_DB]
-        print(f"Connected to MongoDB: {settings.MONGODB_DB}")
+        print(f"Connected to MongoDB (Async): {settings.MONGODB_DB}")
 
     def close_mongo_connection(self):
         if self.client:

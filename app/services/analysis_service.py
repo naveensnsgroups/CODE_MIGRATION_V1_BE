@@ -4,7 +4,7 @@ from typing import Dict, List, Any
 
 class AnalysisService:
     @staticmethod
-    def get_file_tree(project_path: Path) -> List[Dict[str, Any]]:
+    async def get_file_tree(project_path: Path) -> List[Dict[str, Any]]:
         """
         Generates a recursive file tree structure for the project.
         """
@@ -29,7 +29,7 @@ class AnalysisService:
         return build_tree(project_path)
 
     @staticmethod
-    def detect_metadata(project_path: Path) -> Dict[str, Any]:
+    async def detect_metadata(project_path: Path) -> Dict[str, Any]:
         """
         Detects primary language and framework based on entry files.
         """
@@ -69,7 +69,7 @@ class AnalysisService:
         return metadata
 
     @staticmethod
-    def get_project_context(project_id: str) -> List[Dict[str, str]]:
+    async def get_project_context(project_id: str) -> List[Dict[str, str]]:
         """
         Gathers all source code from the project for LLM analysis.
         Returns a list of {"file_name": str, "content": str} objects.

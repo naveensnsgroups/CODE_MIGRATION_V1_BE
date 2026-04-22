@@ -6,6 +6,11 @@ class Settings(BaseSettings):
     STORAGE_DIR: Path = Path(__file__).parent.parent.parent / "storage"
     PROJECTS_DIR: Path = STORAGE_DIR / "projects"
     
+    # Security & Auth
+    SECRET_KEY: str = "DEV_SECRET_KEY_REPLACE_IN_PRODUCTION_82910"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 # 24 hours
+    
     # GitHub OAuth
     GITHUB_CLIENT_ID: str | None = None
     GITHUB_CLIENT_SECRET: str | None = None

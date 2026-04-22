@@ -33,12 +33,11 @@ async def get_saved_reports(project_id: str):
             raise HTTPException(status_code=503, detail="Database connection not available")
 
         # 1. Fetch from standard 'reports' collection (Exclude 'routes' if we want Map Agent priority)
-        cursor = db.db.reports.find({"project_id": project_id})
         reports = []
-        for doc in cursor:
+        cursor = db.db.reports.find({"project_id": project_id})
+        async for doc in cursor:
             action = doc.get("action", "unknown")
             #  Priority Logic (v26.6): Skip 'routes' here if we expect it from 'map_agent'
-            # (We'll check map_agent separately to ensure high-depth data takes precedence)
             if action == "routes": continue
 
             doc_id = doc.pop("_id", None)
@@ -48,57 +47,25 @@ async def get_saved_reports(project_id: str):
                 "saved_at": doc.get("saved_at", datetime.datetime.utcnow().isoformat())
             })
 
-        # 2.  Surgical Routing: Check dedicated agent collections for high-priority analysis reports
-        
-        # 2a. General Agent
-        general_doc = db.db.general_agent.find_one({"project_id": project_id, "action": "general"})
-        if general_doc:
-            general_doc.pop("_id", None)
-            reports.append({
-                "action": "general",
-                "content": general_doc,
-                "saved_at": general_doc.get("saved_at", datetime.datetime.utcnow().isoformat())
-            })
+        # 2. Sequential Async Resolution for agent collections
+        agent_configs = [
+            ("general", db.db.general_agent),
+            ("routes", db.db.map_agent),
+            ("logic", db.db.logic_agent),
+            ("code_layer", db.db.code_analyzer_agent),
+            ("migration", db.db.migration_agent),
+            ("quick_migration", db.db.quick_migration_agent),
+        ]
 
-        # 2b. Map Agent (New v26.6 Priority Integration)
-        map_doc = db.db.map_agent.find_one({"project_id": project_id, "action": "routes"})
-        if map_doc:
-            map_doc.pop("_id", None)
-            reports.append({
-                "action": "routes",
-                "content": map_doc,
-                "saved_at": map_doc.get("saved_at", datetime.datetime.utcnow().isoformat())
-            })
-
-        # 2c. Logic Agent (New v27.2 Integration)
-        logic_doc = db.db.logic_agent.find_one({"project_id": project_id, "action": "logic"})
-        if logic_doc:
-            logic_doc.pop("_id", None)
-            reports.append({
-                "action": "logic",
-                "content": logic_doc,
-                "saved_at": logic_doc.get("saved_at", datetime.datetime.utcnow().isoformat())
-            })
-
-        # 2d. Code Analyzer Agent (New)
-        code_layer_doc = db.db.code_analyzer_agent.find_one({"project_id": project_id, "action": "code_layer"})
-        if code_layer_doc:
-            code_layer_doc.pop("_id", None)
-            reports.append({
-                "action": "code_layer",
-                "content": code_layer_doc,
-                "saved_at": code_layer_doc.get("saved_at", datetime.datetime.utcnow().isoformat())
-            })
-
-        # 2e. Migration Agent (New v28.1 Integration)
-        migration_doc = db.db.migration_agent.find_one({"project_id": project_id, "action": "migration"})
-        if migration_doc:
-            migration_doc.pop("_id", None)
-            reports.append({
-                "action": "migration",
-                "content": migration_doc,
-                "saved_at": migration_doc.get("saved_at", datetime.datetime.utcnow().isoformat())
-            })
+        for action_name, collection in agent_configs:
+            doc = await collection.find_one({"project_id": project_id, "action": action_name})
+            if doc:
+                doc.pop("_id", None)
+                reports.append({
+                    "action": action_name,
+                    "content": doc.get("content", doc),
+                    "saved_at": doc.get("saved_at", datetime.datetime.utcnow().isoformat())
+                })
 
         return {"project_id": project_id, "reports": reports, "status": "success"}
     except Exception as e:
@@ -163,10 +130,12 @@ async def save_analysis_report(project_id: str, request: SaveReportRequest):
             target_collection = db.db.code_analyzer_agent
         elif request.action == "migration":
             target_collection = db.db.migration_agent
+        elif request.action == "quick_migration":
+            target_collection = db.db.quick_migration_agent
         else:
             target_collection = db.db.reports
 
-        result = target_collection.update_one(
+        result = await target_collection.update_one(
             {"project_id": project_id, "action": request.action},
             {"$set": report_data},
             upsert=True
@@ -188,7 +157,7 @@ async def get_project_context(project_id: str):
     Fetches the full code context for a project and bundles the industrial skill directive.
     """
     try:
-        context = analysis_service.get_project_context(project_id)
+        context = await analysis_service.get_project_context(project_id)
         if not context:
             raise HTTPException(status_code=404, detail="No source code found or project empty.")
 

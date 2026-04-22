@@ -9,7 +9,12 @@ dependencies = [
     "gitpython>=3.1.46",
     "httpx>=0.28.1",
     "pydantic-settings>=2.13.1",
-    "pymongo[srv]>=4.16.0",
+    "motor>=3.6.0",
     "python-multipart>=0.0.22",
     "uvicorn>=0.42.0",
+    "python-jose[cryptography]>=3.5.0",
+    "passlib[bcrypt]>=1.7.4",
+    "bcrypt==3.2.2",
+    "pyjwt>=2.12.1",
+    "pydantic[email]>=2.12.5",
 ]
