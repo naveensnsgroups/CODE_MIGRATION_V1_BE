@@ -54,7 +54,7 @@ async def get_saved_reports(project_id: str):
             ("logic", db.db.logic_agent),
             ("code_layer", db.db.code_analyzer_agent),
             ("migration", db.db.migration_agent),
-            ("quick_migration", db.db.quick_migration_agent),
+            ("quick_migration", db.db.standalone_report),
         ]
 
         for action_name, collection in agent_configs:
@@ -131,7 +131,7 @@ async def save_analysis_report(project_id: str, request: SaveReportRequest):
         elif request.action == "migration":
             target_collection = db.db.migration_agent
         elif request.action == "quick_migration":
-            target_collection = db.db.quick_migration_agent
+            target_collection = db.db.standalone_report
         else:
             target_collection = db.db.reports
 
