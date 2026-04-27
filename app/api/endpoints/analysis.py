@@ -184,7 +184,9 @@ async def get_skill_directive(action: str):
         skill_name = action
         skill_file = f"{skill_name}.skill.md"
 
-        skills_dir = Path("e:/CODE_MIGRATION_V1/CODE_MIGRATION_V1_BE/skills")
+        # Dynamic path resolution for skills
+        base_dir = Path(__file__).parent.parent.parent.parent
+        skills_dir = base_dir / "skills"
         skill_path = skills_dir / skill_file
 
         if not skill_path.exists():

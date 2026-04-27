@@ -17,8 +17,8 @@ class CloneService:
         project_id = f"prj_{url_hash}"
         project_path = settings.PROJECTS_DIR / project_id
         
-        #  Shortcut: If project already exists, don't re-clone
-        if project_path.exists():
+        #  Shortcut: If project already exists and is NOT empty, don't re-clone
+        if project_path.exists() and any(project_path.iterdir()):
             print(f"[Persistence Hub] Project {project_id} already exists. Resuming session.")
             return project_id
         
